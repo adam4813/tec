@@ -4,6 +4,8 @@
 #include "events.hpp"
 #include "multiton.hpp"
 #include "resources/script-file.hpp"
+#include "physics-system.hpp"
+#include "components/lua-script.hpp"
 
 namespace tec {
 	using LuaScriptMap = Multiton<eid, LuaScript*>;
@@ -75,5 +77,13 @@ namespace tec {
 
 	void LuaSystem::ExecuteString(std::string script_string) {
 		this->lua.script(script_string);
+	}
+
+	void LuaSystem::RegisterPhysicsSystem(PhysicsSystem* physics_system) {
+		this->physics_system = physics_system;
+
+		this->lua["Entity"]["set_position"] = [&](eid id, int x) {
+			this->physics_system->GetPosition(0);
+		};
 	}
 }

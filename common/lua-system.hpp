@@ -13,6 +13,7 @@
 #include "components/lua-script.hpp"
 
 namespace tec {
+	class PhysicsSystem;
 	class LuaSystem;
 	typedef Command<LuaSystem> LuaCommand;
 	struct EntityCreated;
@@ -34,11 +35,13 @@ namespace tec {
 		void ExecuteString(std::string script_string);
 
 		std::shared_ptr<LuaScript> LoadFile(FilePath filepath);
+        void RegisterPhysicsSystem(PhysicsSystem * physics_system);
 
 		sol::state& GetGlobalState() {
 			return this->lua;
 		}
 	private:
 		sol::state lua;
+        PhysicsSystem* physics_system;
 	};
 }

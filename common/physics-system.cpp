@@ -68,16 +68,10 @@ namespace tec {
 				continue;
 			}
 			if (state.positions.find(entity_id) != state.positions.end()) {
-				glm::vec3 position = state.positions.at(entity_id).value;
-				if (std::isfinite(position.x) && std::isfinite(position.y) && std::isfinite(position.z)) {
-					collidable->motion_state.transform.setOrigin(btVector3(position.x, position.y, position.z));
-				}
+				SetPosition(entity_id, state.positions.at(entity_id));
 			}
 			if (state.orientations.find(entity_id) != state.orientations.end()) {
-				glm::quat orientation = state.orientations.at(entity_id).value;
-				if (std::isfinite(orientation.x) && std::isfinite(orientation.y) && std::isfinite(orientation.z) && std::isfinite(orientation.w)) {
-					collidable->motion_state.transform.setRotation(btQuaternion(orientation.x, orientation.y, orientation.z, orientation.w));
-				}
+				SetOrientation(entity_id, state.orientations.at(entity_id));
 			}
 
 			btRigidBody* body = this->bodies[entity_id];
@@ -275,6 +269,9 @@ namespace tec {
 	bool PhysicsSystem::AddRigidBody(CollisionBody* collision_body) {
 		eid entity_id = collision_body->entity_id;
 
+		auto f1 = std::bind(&PhysicsSystem::TransformUpdateCallback, this, entity_id);
+		collision_body->motion_state.setCallback(f1);
+
 		RemoveRigidBody(entity_id);
 
 		if (!collision_body->shape) {
@@ -374,11 +371,41 @@ namespace tec {
 		return glm::vec3();
 	}
 
+	void PhysicsSystem::SetPosition(eid entity_id, Position position) {
+		if (this->bodies.find(entity_id) != this->bodies.end()) {
+			if (std::isfinite(position.value.x) && std::isfinite(position.value.y) && std::isfinite(position.value.z)) {
+				auto collidable = CollisionBodyMap::Get(entity_id);
+				auto body = this->bodies.at(entity_id);
+				collidable->motion_state.transform.setOrigin(btVector3(position.value.x, position.value.y, position.value.z));
+				UpdateBodyWorldTransform(entity_id);
+			}
+		}
+	}
+
 	Orientation PhysicsSystem::GetOrientation(eid entity_id) {
 		if (this->bodies.find(entity_id) != this->bodies.end() && this->bodies.at(entity_id)) {
 			auto rot = static_cast<CollisionBody*>(this->bodies.at(entity_id)->getUserPointer())->motion_state.transform.getRotation();
 			return glm::quat(rot.w(), rot.x(), rot.y(), rot.z());
 		}
 		return glm::quat();
+	}
+
+	void PhysicsSystem::SetOrientation(eid entity_id, Orientation orientation) {
+		if (this->bodies.find(entity_id) != this->bodies.end()) {
+			if (std::isfinite(orientation.value.x) && std::isfinite(orientation.value.y) && std::isfinite(orientation.value.z) && std::isfinite(orientation.value.w)) {
+				auto collidable = CollisionBodyMap::Get(entity_id);
+				auto body = this->bodies.at(entity_id);
+				collidable->motion_state.transform.getBasis().setRotation(btQuaternion(orientation.value.x, orientation.value.y, orientation.value.z, orientation.value.w));
+				UpdateBodyWorldTransform(entity_id);
+			}
+		}
+	}
+
+	void PhysicsSystem::UpdateBodyWorldTransform(eid entity_id) {
+		auto collidable = CollisionBodyMap::Get(entity_id);
+		auto body = this->bodies.at(entity_id);
+		this->dynamicsWorld->removeRigidBody(body);
+		body->setWorldTransform(collidable->motion_state.transform);
+		this->dynamicsWorld->addRigidBody(body);
 	}
 }

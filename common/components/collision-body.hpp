@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <functional>
 
 #include <btBulletCollisionCommon.h>
 #include <btBulletDynamicsCommon.h>
@@ -8,6 +9,7 @@
 #include "tec-types.hpp"
 
 namespace tec {
+	using SetTransformCallback = std::function<void()>;
 	ATTRIBUTE_ALIGNED16(struct) CollisionBody {
 
 		BT_DECLARE_ALIGNED_ALLOCATOR();
@@ -19,6 +21,10 @@ namespace tec {
 			MotionState(MotionState&& other) noexcept : transform(std::move(other.transform)),
 				transform_updated(other.transform_updated) {}
 
+			void setCallback(SetTransformCallback callback) {
+				this->updateCallback = callback;
+			}
+			
 			MotionState& operator=(MotionState&& other) noexcept {
 				transform_updated = other.transform_updated;
 				return *this;
@@ -31,10 +37,13 @@ namespace tec {
 			void setWorldTransform(const btTransform& worldTrans) {
 				this->transform_updated = true;
 				this->transform = worldTrans;
+				updateCallback();
 			}
 
 			btTransform transform;
 			bool transform_updated = true;
+		private:
+			SetTransformCallback updateCallback;
 		};
 
 		CollisionBody() = default;

@@ -49,8 +49,11 @@ namespace tec {
 		void On(std::shared_ptr<EntityDestroyed> data);
 
 		Position GetPosition(eid entity_id);
+		void SetPosition(eid entity_id, Position position);
 		Orientation GetOrientation(eid entity_id);
+		void SetOrientation(eid entity_id, Orientation orientation);
 	protected:
+		void UpdateBodyWorldTransform(eid entity_id);
 		/** \brief Set a rigid body's gravity.
 		 *
 		 * \param const unsigned int entity_id The entity ID of the rigid body.
@@ -64,6 +67,10 @@ namespace tec {
 		 */
 		void SetNormalGravity(const unsigned int entity_id);
 	private:
+		void TransformUpdateCallback(eid entity_id) {
+			int x = entity_id;
+			int y = x * 2 + 3;
+		}
 		bool AddRigidBody(CollisionBody* collision_body);
 		void RemoveRigidBody(eid entity_id);
 
@@ -74,6 +81,7 @@ namespace tec {
 		btDynamicsWorld* dynamicsWorld;
 
 		std::map<eid, btRigidBody*> bodies;
+		//std::unordered_map<eid, MotionState> motion_states;
 
 		btVector3 last_rayfrom;
 		double last_raydist{ 0.0 };
